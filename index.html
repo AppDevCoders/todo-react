@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <title>ReactJS</title>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="./jquery/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="./bootstrap/css/bootstrap.min.css">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="./bootstrap/js/bootstrap.min.js"></script>
+
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+
+    <div id="root"></div>
+
+
+<script type="text/babel">
+
+
+    /* ---------------------------------- */
+    /* ------- Component TodoForm ------- */
+    /* ---------------------------------- */
+    class TodoForm extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = {
+                total: 0,
+                remaining: 0,
+                dones: 0,
+                todos: [
+                    { id: 1, task: 'Learn Kotlin!',                   done: false, editing: false },
+                    { id: 2, task: 'Watch the movie: Thor Ragnarok',  done: false, editing: false },
+                    { id: 3, task: 'Travel to Germany',               done: false, editing: false },
+                    { id: 4, task: 'Travel to Argentina',             done: true,  editing: false },
+                ],
+                search: '',
+            };
+
+            this.handleNewItem = this.handleNewItem.bind(this);
+            this.handleClear = this.handleClear.bind(this);
+            this.handleSort = this.handleSort.bind(this);
+            this.handleSearch = this.handleSearch.bind(this);
+
+            this.handleToogleItem = this.handleToogleItem.bind(this);
+            this.handleChangeTask = this.handleChangeTask.bind(this);
+            this.handleEditItem = this.handleEditItem.bind(this);
+            this.handleDeleteItem = this.handleDeleteItem.bind(this);
+            this.handleSaveItem = this.handleSaveItem.bind(this);
+        }
+
+        componentDidMount() {
+            this.updateUI();
+        }
+
+        componentWillUnmount() {}
+
+        //--- form ---
+
+        getMaxID() {
+            return Math.max.apply(Math,this.state.todos.map(function(i){return i.id;}));
+        }
+
+        handleNewItem(e) {
+            //console.log('TodoForm handleNewItem()');
+            var newID = (this.getMaxID() || 0) + 1;
+
+            this.state.todos.unshift(
+                { id: newID, task: '', done: false, editing: true },
+            );
+
+            this.setState({ todos: this.state.todos });
+            this.updateUI();
+        }
+
+        handleClear(e) {
+            //console.log('TodoForm handleClear()');
+            var result = confirm("Delete all tasks?");
+            if (result) {
+                this.setState({
+                    total: 0,
+                    remaining: 0,
+                    dones: 0,
+                    todos: [],
+                    search: ''
+                });
+                this.updateUI();
+            }
+        }
+
+        handleSort(e) {
+            //console.log('TodoForm handleSort()');
+            this.state.todos.sort((a, b) => {
+                return a.task > b.task;
+            });
+            this.setState({ todos: this.state.todos });
+        }
+
+        handleSearch(e) {
+            //console.log('TodoForm handleSearch(): ', e.target.value);
+            this.setState({ search: e.target.value });
+        }
+
+        getFilteredTodos() {
+            return this.state.todos.filter((t) => {
+                return !this.state.search || t.task.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0;
+            });
+        }
+
+        //--- record ---
+
+        handleToogleItem(e, todo) {
+            //console.log('TodoForm handleToogleItem()', todo);
+            var index = this.state.todos.indexOf(todo);
+            this.state.todos[index].done = !this.state.todos[index].done;
+
+            this.setState({ todos: this.state.todos });
+            this.updateUI();
+        }
+
+        handleChangeTask(e, todo) {
+            //console.log('TodoForm handleChangeTask()', todo, e.target.value);
+            var index = this.state.todos.indexOf(todo);
+            this.state.todos[index].task = e.target.value;
+
+            this.setState({ todos: this.state.todos });
+        }
+
+        handleEditItem(e, todo) {
+            //console.log('TodoForm handleEditItem()', todo);
+            var index = this.state.todos.indexOf(todo);
+            this.state.todos[index].editing = true;
+
+            this.setState({ todos: this.state.todos });
+        }
+
+        handleDeleteItem(e, todo) {
+            //console.log('TodoForm handleDeleteItem()', todo);
+            var result = confirm("Delete this task?");
+            if (result) {
+                var index = this.state.todos.indexOf(todo);
+                this.state.todos.splice(index, 1);
+
+                this.setState({ todos: this.state.todos });
+                this.updateUI();
+            }
+        }
+
+        handleSaveItem(e, todo) {
+            //console.log('TodoForm handleDeleteItem()', todo);
+            if (todo.task !== '') {
+                var index = this.state.todos.indexOf(todo);
+
+                todo.editing = false;
+                this.state.todos[index] = todo;
+
+                this.setState({ todos: this.state.todos });
+                this.updateUI();
+            }
+        }
+
+        //--- misc ---
+
+        updateUI() {
+            var _total = this.state.todos.length;
+            var _dones = this.state.todos.filter(t => t.done == true).length
+
+            this.setState({
+                total: _total,
+                dones: _dones,
+                remaining: (_total - _dones),
+            });
+        }
+
+        //--- render ---
+
+        render() {
+            return (
+                <div className="panel panel-default" style={{margin: 10}}>
+
+                    <div className="panel-heading">
+                        TO-DO List
+
+                        <div className="input-group pull-right" style={{width: 350,  marginTop: -7}}>
+                            <input id="search" type="text" className="form-control" placeholder="Filter..." onChange={this.handleSearch} />
+                            <span className="input-group-btn">
+                            <button className="btn btn-default disabled" type="button">
+                                <span className="glyphicon glyphicon-filter" aria-hidden="true"></span>
+                            </button>
+                            <button className="btn btn-default" type="button" onClick={this.handleSort}>
+                                <span className="glyphicon glyphicon-sort-by-attributes" aria-hidden="true"></span>
+                            </button>
+                            <button className="btn btn-default" type="button" onClick={this.handleClear}>
+                                <span className="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            </button>
+                            <button type="button" className="btn btn-default" onClick={this.handleNewItem}>
+                                <span className="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                            </button>
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div className="panel-body">
+
+                    {/* record */}
+
+                    {this.getFilteredTodos().map(todo => (
+
+                        <div className="record" key={todo.id}>
+                            <form className="form-inline">
+
+                                <button type="button" className="btn btn-sm" onClick={(e) => this.handleToogleItem(e, todo)}>
+                                    <span className={"glyphicon " + (todo.done ? "glyphicon-check" : "glyphicon-unchecked")} aria-hidden="true"></span>
+                                </button>
+
+                                <div className="form-group">
+                                    <input name="task" placeholder="Task?" type="text"
+                                        className={"form-control task " + (todo.done ? "done" : "")}
+                                        value={todo.task}
+                                        onChange={(e) => this.handleChangeTask(e, todo)} readOnly={ !todo.editing }
+                                        onDoubleClick={(e) => this.handleEditItem(e, todo)} />
+                                </div>
+
+                                <button type="button" className={"btn btn-sm " + (todo.editing ? "hidden" : "")} onClick={(e) => this.handleEditItem(e, todo)}>
+                                    <span className="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                                </button>
+
+                                <button type="button" className={"btn btn-sm " + (todo.editing ? "hidden" : "")} onClick={(e) => this.handleDeleteItem(e, todo)}>
+                                    <span className="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                </button>
+
+                                <button type="button" className={"btn btn-sm " + (!todo.editing ? "hidden" : "")} onClick={(e) => this.handleSaveItem(e, todo)}>
+                                    <span className="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
+                                </button>
+
+                            </form>
+                        </div>
+
+                    ))}
+
+                    {/* /record */}
+
+                    </div>
+
+                    <div className="panel-footer">
+                        <div className="container-fluid row">
+                            <span className="badge pull-right">Total: {this.state.total}</span>
+                            <span className="badge danger pull-right">TODO: {this.state.remaining}</span>
+                            <span className="badge success pull-right">Done: {this.state.dones}</span>
+                        </div>
+                    </div>
+
+                </div>
+            );
+        }
+    }
+
+
+    /* ---------------------------------- */
+    /* ----- Component Performance ------ */
+    /* ---------------------------------- */
+    class Performance extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = {
+                numbers: [],
+                elapsedtime: 0
+            };
+            this.handleStart = this.handleStart.bind(this);
+            this.handleClear = this.handleClear.bind(this);
+        }
+
+        //-- Init
+        componentDidMount() {
+            this.handleClear();
+        }
+
+        handleClear(e) {
+            console.log('Performance handleClear()');
+            this.setState({
+                numbers: [],
+                elapsedtime: 0
+            });
+        }
+
+        handleStart(e) {
+            console.log('Performance handleStart()');
+            this.calcPrimes();
+        }
+
+        calcPrimes() {
+            console.log('Performance calcPrimes()');
+            this.handleClear();
+
+            var num = parseInt(this.props.start || 1);
+            var limit = parseInt(this.props.amount || 100);
+
+            var _nums = [];
+
+            var starttime = new Date().getTime();
+            for(var i = 1; i <= limit; i++) {
+
+                num = this.nextPrimeNumber(num);
+                _nums.unshift(num);
+                //console.log("num: ", num);
+
+                num = num + 1;
+            }
+
+            this.setState({
+                numbers: _nums,
+                elapsedtime: new Date().getTime() - starttime
+            });
+        }
+
+        nextPrimeNumber(num) {
+            var result = false;
+            while (!result) {
+                result = this.isPrime(num);
+                if (!result) {
+                    num = num + 1;
+                }
+            }
+            return num;
+        }
+
+        isPrime(num) {
+            for(var i = 2; i < num; i++)
+                if(num % i === 0) return false;
+            return num !== 1;
+        }
+
+        render() {
+            return (
+                <div className="container-fluid row">
+                    <div className="panel panel-default" style={{margin: 10}}>
+
+                        <div className="panel-heading">
+
+                            Performance Test - Calc the first {this.props.amount} prime numbers &nbsp;
+
+                            <button type="button" className="btn btn-default btn-sm" onClick={this.handleStart}>
+                                <span className="glyphicon glyphicon-play" aria-hidden="true"></span>
+                            </button>
+                            <button type="button" className="btn btn-default btn-sm" onClick={this.handleClear}>
+                                <span className="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            </button>
+
+                            &nbsp;
+                            Time: {this.state.elapsedtime} milliseconds
+                        </div>
+
+                        <div id="testResult" className="panel-body">
+                            {this.state.numbers.map(num => (
+                                <div className="badge prime" key={num}>{num}</div>
+                            ))}
+                        </div>
+
+                    </div>
+                </div>
+            );
+        }
+    }
+
+
+    /* ---------------------------------- */
+    /* ----- Component AppContainer ----- */
+    /* ---------------------------------- */
+    class AppContainer extends React.Component {
+        constructor(props) {
+            super(props);
+            this.state = {
+                title: 'TODO WebApp / ReactJS v16+',
+                show: false
+            };
+            this.handleChange = this.handleChange.bind(this);
+        }
+        handleChange(e) {
+            console.log('AppContainer handleChange()');
+            this.setState({ show: !this.state.show });
+        }
+        render() {
+            return (
+                <div id="app">
+                    <div className="container-fluid row">
+
+                        {/* /HEADER */}
+                        <div className="navbar navbar-default">
+                            <div className="container-fluid">
+
+                                <div className="navbar-header">
+                                    <button type="button" className="navbar-toggle" data-toggle="collapse" data-target="#navbar1">
+                                        <span className="sr-only">Toggle navigation</span>
+                                        <span className="icon-bar"></span>
+                                        <span className="icon-bar"></span>
+                                        <span className="icon-bar"></span>
+                                    </button>
+                                    <img className="navbar-brand" src="./images/react.png"/>
+                                    <a id="title" className="navbar-brand" href="#"> {this.state.title} </a>
+                                </div>
+
+                                <div className="collapse navbar-collapse" id="navbar1">
+                                    <ul className="nav navbar-nav navbar-right">
+
+                                        <li>
+                                            <a href="https://www.chamogeek.com" target="blank">
+                                                <span className="glyphicon glyphicon-globe" aria-hidden="true"></span>
+                                                &nbsp;
+                                                ChamoGeek
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </div>
+
+                            </div>
+                        </div>
+                        {/* /HEADER */}
+
+
+                        {/* LIST */}
+                        <TodoForm/>
+                        {/* /LIST */}
+
+
+                        {/* PERFORMANCE */}
+
+                        <label style={{margin: 10}}>
+                            <input id="showPerformanceTest" type="checkbox" onChange={this.handleChange}/>
+                            &nbsp;
+                            Performance Test
+                        </label>
+
+                        { this.state.show ? <Performance start="1" amount="10000" /> : null }
+
+                        {/* /PERFORMANCE */}
+
+                    </div>
+                </div>
+            );
+        }
+    }
+
+
+    /* ---------------------------------- */
+    /* ------------ Run App ------------- */
+    /* ---------------------------------- */
+    ReactDOM.render(
+        <AppContainer/>,
+        document.getElementById('root')
+    );
+
+</script>
+
+</body>
+</html>
